@@ -1,0 +1,59 @@
+﻿@page "/login"
+
+<EditForm Model="UserForAuthentication" OnValidSubmit="LoginUser">
+    <DataAnnotationsValidator />
+    <div class="py-4">
+        <div class=" row form-group ">
+            <div class="col-6 offset-3 ">
+                <div class="card border">
+                    <div class="card-body px-lg-5 pt-4">
+                        <h3 class="col-12 text-success text-center py-2">
+                        <strong>Sign In</strong>
+                        </h3>
+
+                        @if (ShowAuthenticationErrors)
+                        {
+                            <p class="text-danger text-center">@Errors</p>
+                        }
+
+                        <hr style="background-color:aliceblue" />
+
+                        <div class="py-2">
+                            <InputText @bind-Value="UserForAuthentication.UserName" id="email" placeholder="Email..." class="form-control mb-2" />
+                            <ValidationMessage For="(()=>UserForAuthentication.UserName)" />
+                        </div>
+
+                        <div class="py-2">
+                            <InputText @bind-Value="UserForAuthentication.Password" type="password" placeholder="Password..." id="password" class="form-control mb-2" />
+                            <ValidationMessage For="(()=>UserForAuthentication.Password)" />
+                        </div>
+
+                        <hr style="background-color:aliceblue" />
+
+                        <div class="py-2">
+                            @if (IsProcessing)
+                            {
+                                <button type="submit" class="btn btn-success btn-block disabled my-2 me-2">
+                                    <i class="fas fa-sign-in-alt"></i>
+                                    Please wait...
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="submit" class="btn btn-success btn-block my-2 me-2">
+                                    <i class="fas fa-sign-in-alt"></i>
+                                    Sign in
+                                </button>
+                            }
+
+                            <a href="/registration" class="btn btn-primary text-white my-2 me-2">
+                                <i class="fas fa-user-plus"></i> 
+                                Register as a new user
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>  
+</EditForm>

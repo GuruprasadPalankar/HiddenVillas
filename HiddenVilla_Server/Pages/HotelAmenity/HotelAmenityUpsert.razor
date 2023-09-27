@@ -1,0 +1,154 @@
+﻿@page "/hotel-amenity/create"
+@page "/hotel-amenity/edit/{Id:int}"
+@using Models
+@using Business.Repository.IRepository
+@inject IHotelAmenityRepository HotelAmenityRepository
+@inject NavigationManager  NavigationManager
+@inject IJSRuntime JsRuntime
+@attribute [Authorize(Roles = Common.SD.Role_Admin)]
+
+<div class="row mt-2 mb-5">
+    <h3 class="card-title text-info mb-3 ml-3">@Title Hotel Amenity </h3>
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <EditForm Model="HotelAmenityModel" OnValidSubmit="HandleHotelAmenityUpsert">
+                    <DataAnnotationsValidator />
+                    <div class="form-group">
+                        <label>Name</label>
+                        <InputText @bind-Value="HotelAmenityModel.Name" class="form-control"></InputText>
+                        <ValidationMessage For="() => HotelAmenityModel.Name" />
+                    </div>
+                    <div class="form-group">
+                        <label>Timing</label>
+                        <InputText @bind-Value="HotelAmenityModel.Timing" class="form-control"></InputText>
+                        <ValidationMessage For="() => HotelAmenityModel.Timing" />
+                    </div>
+                    <div class="form-group">
+                        <label>Icon</label>
+                        <InputText @bind-Value="HotelAmenityModel.Icon" class="form-control"></InputText>
+                        <ValidationMessage For="() => HotelAmenityModel.Icon" />
+                    </div>
+                    <div class="form-group" style="height:250px;">
+                        <label>Description</label>
+                        <BlazoredTextEditor @ref="@QuillHtml" Placeholder="Please enter the description of Amenity">
+                            <ToolbarContent>
+                                <select class="ql-header">
+                                    <option selected=""></option>
+                                    <option value="1"></option>
+                                    <option value="2"></option>
+                                    <option value="3"></option>
+                                    <option value="4"></option>
+                                    <option value="5"></option>
+                                </select>
+                                <span class="ql-formats">
+                                    <button class="ql-bold"></button>
+                                    <button class="ql-italic"></button>
+                                    <button class="ql-underline"></button>
+                                    <button class="ql-strike"></button>
+                                </span>
+                                <span class="ql-formats">
+                                    <select class="ql-color"></select>
+                                    <select class="ql-background"></select>
+                                </span>
+                                <span class="ql-formats">
+                                    <button class="ql-list" value="ordered"></button>
+                                    <button class="ql-list" value="bullet"></button>
+                                </span>
+                                <span class="ql-formats">
+                                    <button class="ql-link"></button>
+                                </span>
+                            </ToolbarContent>
+                        </BlazoredTextEditor>
+                    </div>
+                    <div class="form-group" style="padding-top:70px">
+                        <button class="btn btn-primary">@Title Amenity</button>
+                        <NavLink href="hotel-Amenity" class="btn btn-secondary">Back to Index</NavLink>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+    private HotelAmenityDTO HotelAmenityModel { get; set; } = new HotelAmenityDTO();
+    private string Title { get; set; } = "Create";
+    public BlazoredTextEditor QuillHtml { get; set; } = new BlazoredTextEditor();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id != null)
+        {
+            //Update Amenity
+            Title = "Update";
+            HotelAmenityModel = await HotelAmenityRepository.GetHotelAmenity(Id.Value);
+        }
+        else
+        {
+            //Create Amenity
+            HotelAmenityModel = new HotelAmenityDTO();
+        }
+    }
+
+    protected async override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+        bool loading = true;
+        while (loading)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(HotelAmenityModel.Description))
+                {
+                    await this.QuillHtml.LoadHTMLContent(HotelAmenityModel.Description);
+                }
+                loading = false;
+            }
+            catch (Exception)
+            {
+                await Task.Delay(10);
+                loading = true;
+            }
+        }
+    }
+
+    private async Task HandleHotelAmenityUpsert()
+    {
+        try
+        {
+            var amenityDetailsByName = await HotelAmenityRepository.IsAmenityUnique(HotelAmenityModel.Name, HotelAmenityModel.Id);
+            if (amenityDetailsByName != null)
+            {
+                //there is duplicate amenity show error
+                await JsRuntime.ToastrError("Amenity name already exists.");
+                return;
+            }
+
+            if (HotelAmenityModel.Id != 0 && Title == "Update")
+            {
+                //Update
+                HotelAmenityModel.Description = await QuillHtml.GetHTML();
+                await HotelAmenityRepository.UpdateHotelAmenity(HotelAmenityModel.Id, HotelAmenityModel);
+                await JsRuntime.ToastrSuccess("Hotel Amenity updated successfully.");
+            }
+            else
+            {
+                //Create
+                HotelAmenityModel.Description = await QuillHtml.GetHTML();
+                await HotelAmenityRepository.CreateHotelAmenity(HotelAmenityModel);
+                await JsRuntime.ToastrSuccess("Hotel Amenity creted successfully.");
+            }
+        }
+        catch (Exception ex)
+        {
+            //log error
+        }
+
+        NavigationManager.NavigateTo("hotel-Amenity");
+    }
+
+}
